@@ -1,0 +1,22 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Development Environment Setup",
+        "description": "Set up development environment for Flutter, Next.js, and backend services",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-10-05T04:06:44.943Z",
+      "updated": "2025-10-05T04:06:44.949Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
