@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:marsa_app/data/models/folder_model.dart';
 import 'package:marsa_app/data/repositories/folder_repository.dart';
 import 'package:marsa_app/logic/blocs/folder/folder_event.dart';
 import 'package:marsa_app/logic/blocs/folder/folder_state.dart';

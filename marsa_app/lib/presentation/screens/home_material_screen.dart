@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:marsa_app/logic/blocs/word/word_bloc.dart';
 import 'package:marsa_app/logic/blocs/word/word_event.dart';
 import 'package:marsa_app/logic/blocs/word/word_state.dart';
+import 'package:marsa_app/presentation/widgets/integrated_search_widget.dart';
 
 class HomeMaterialScreen extends StatefulWidget {
   const HomeMaterialScreen({super.key});
@@ -23,7 +24,7 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
       duration: const Duration(milliseconds: 300),
     );
     _animationController.forward();
-    
+
     // Load words to get statistics
     context.read<WordBloc>().add(const LoadAllWords());
   }
@@ -46,6 +47,41 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header: Avatar (left) and Settings (right)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Avatar on the left
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundColor: Colors.orange,
+                        child: const Text(
+                          'A',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      // Settings icon on the right
+                      IconButton(
+                        icon: const Icon(Icons.settings),
+                        iconSize: 28,
+                        onPressed: () {
+                          DefaultTabController.of(context).animateTo(3);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Search Bar
+                const IntegratedSearchWidget(),
+                const SizedBox(height: 16),
+
                 // 1. Welcome Block
                 _buildWelcomeCard(),
                 const SizedBox(height: 16),
@@ -82,9 +118,7 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
       opacity: _animationController,
       child: Card(
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -104,9 +138,9 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
               Text(
                 'WELCOME BACK!',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black87,
-                    ),
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black87,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -188,18 +222,16 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
     required Color iconColor,
   }) {
     return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(0, 0.3),
-        end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOut,
-      )),
+      position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+          .animate(
+            CurvedAnimation(
+              parent: _animationController,
+              curve: Curves.easeOut,
+            ),
+          ),
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Container(
           decoration: BoxDecoration(
             color: color,
@@ -257,12 +289,12 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
         Text(
           'QUICK ACCESS',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: Colors.black87,
-              ),
+            fontWeight: FontWeight.w900,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 12),
-        
+
         // Card 1: DICTIONARY
         _buildQuickActionCard(
           title: 'DICTIONARY',
@@ -274,7 +306,7 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
           },
         ),
         const SizedBox(height: 12),
-        
+
         // Card 2: FLASHCARDS
         _buildQuickActionCard(
           title: 'FLASHCARDS',
@@ -288,7 +320,7 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
           },
         ),
         const SizedBox(height: 12),
-        
+
         // Card 3: PRACTICE
         _buildQuickActionCard(
           title: 'PRACTICE',
@@ -300,7 +332,7 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
           },
         ),
         const SizedBox(height: 12),
-        
+
         // Card 4: PRONUNCIATION
         _buildQuickActionCard(
           title: 'PRONUNCIATION',
@@ -413,12 +445,12 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
             Text(
               'AI RECOMMENDATIONS',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black87,
-                  ),
+                fontWeight: FontWeight.w900,
+                color: Colors.black87,
+              ),
             ),
             const SizedBox(height: 12),
-            
+
             // Card 1: YOUR FAVORITES
             _buildRecommendationCard(
               icon: Icons.star,
@@ -426,12 +458,14 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
               subtitle: '$favoriteCount words saved for quick access',
               color: Colors.amber[300]!,
               onTap: () {
-                context.read<WordBloc>().add(const LoadAllWords(isFavorite: true));
+                context.read<WordBloc>().add(
+                  const LoadAllWords(isFavorite: true),
+                );
                 DefaultTabController.of(context).animateTo(1);
               },
             ),
             const SizedBox(height: 12),
-            
+
             // Card 2: BUILD YOUR VOCABULARY
             _buildRecommendationCard(
               icon: Icons.library_books,
@@ -468,10 +502,7 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
       ),
       child: Row(
         children: [
-          Text(
-            emoji,
-            style: const TextStyle(fontSize: 24),
-          ),
+          Text(emoji, style: const TextStyle(fontSize: 24)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -569,9 +600,7 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
   Widget _buildDailyGoalCard() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -584,9 +613,9 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
             Text(
               'DAILY GOAL',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black87,
-                  ),
+                fontWeight: FontWeight.w900,
+                color: Colors.black87,
+              ),
             ),
             const SizedBox(height: 20),
             Row(
@@ -638,18 +667,13 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
   Widget _buildFooterCard() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.blue[100]!,
-              Colors.purple[100]!,
-            ],
+            colors: [Colors.blue[100]!, Colors.purple[100]!],
           ),
           borderRadius: BorderRadius.circular(16),
         ),
@@ -704,9 +728,9 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
                 Text(
                   'YOUR PROGRESS',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black87,
-                      ),
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black87,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Row(
@@ -750,10 +774,7 @@ class _HomeMaterialScreenState extends State<HomeMaterialScreen>
     );
   }
 
-  Widget _buildProgressItem({
-    required String label,
-    required String value,
-  }) {
+  Widget _buildProgressItem({required String label, required String value}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
