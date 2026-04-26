@@ -4,7 +4,9 @@ import 'package:marsa_app/data/models/folder_model.dart';
 import 'package:marsa_app/logic/blocs/folder/folder_bloc.dart';
 import 'package:marsa_app/logic/blocs/folder/folder_event.dart';
 import 'package:marsa_app/logic/blocs/folder/folder_state.dart';
-import 'package:marsa_app/presentation/screens/game_selection_screen.dart';
+import 'package:marsa_app/presentation/screens/folder_detail_screen_new.dart';
+import 'package:marsa_app/presentation/widgets/glass_card.dart';
+import 'package:marsa_app/presentation/widgets/layered_icons.dart';
 
 class PracticeMaterialScreen extends StatefulWidget {
   const PracticeMaterialScreen({super.key});
@@ -25,7 +27,7 @@ class _PracticeMaterialScreenState extends State<PracticeMaterialScreen>
       duration: const Duration(milliseconds: 300),
     );
     _animationController.forward();
-    
+
     // Load folders when screen opens
     context.read<FolderBloc>().add(const LoadFolders());
   }
@@ -36,13 +38,18 @@ class _PracticeMaterialScreenState extends State<PracticeMaterialScreen>
     super.dispose();
   }
 
-  void _handleFolderTap(FolderModel folder) {
-    Navigator.push(
+  void _handleFolderTap(FolderModel folder) async {
+    // Navigate to folder vocabulary screen (Quizlet-style)
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GameSelectionScreen(folder: folder),
+        builder: (context) => FolderDetailScreenNew(folder: folder),
       ),
     );
+    // Reload folders to ensure word count is synchronized
+    if (mounted) {
+      context.read<FolderBloc>().add(const LoadFolders());
+    }
   }
 
   void _handleCreateFolder() {
@@ -51,278 +58,300 @@ class _PracticeMaterialScreenState extends State<PracticeMaterialScreen>
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Create New Folder',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: 'Folder Name',
-              border: OutlineInputBorder(),
+      builder: (dialogContext) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: isDark ? const Color(0xFF202140) : null,
+          title: Text(
+            'Create New Folder',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : null,
             ),
-            textCapitalization: TextCapitalization.sentences,
-            autofocus: true,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Please enter a folder name';
-              }
-              return null;
-            },
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: nameController,
+              style: TextStyle(color: isDark ? Colors.white : null),
+              decoration: InputDecoration(
+                labelText: 'Folder Name',
+                labelStyle: TextStyle(color: isDark ? Colors.white70 : null),
+                border: const OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.white30 : Colors.grey.shade400,
+                  ),
+                ),
+              ),
+              textCapitalization: TextCapitalization.sentences,
+              autofocus: true,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter a folder name';
+                }
+                return null;
+              },
+            ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() ?? false) {
-                final name = nameController.text.trim();
-                context.read<FolderBloc>().add(AddFolder(name));
-                Navigator.of(dialogContext).pop();
-              }
-            },
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: isDark ? Colors.white70 : null),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF8946),
+              ),
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  final name = nameController.text.trim();
+                  context.read<FolderBloc>().add(AddFolder(name));
+                  Navigator.of(dialogContext).pop();
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: SafeArea(
-        child: BlocBuilder<FolderBloc, FolderState>(
-          builder: (context, state) {
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    _buildHeader(),
-                    const SizedBox(height: 16),
-
-                    // Stats
-                    _buildStats(),
-                    const SizedBox(height: 24),
-
-                    // Folders Section
-                    _buildFoldersSection(state),
-                    const SizedBox(height: 24),
-
-                    // Tips
-                    _buildTips(),
-                  ],
-                ),
-              ),
-            );
-          },
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0A082D), Color(0xFF1A1C3A)],
+                )
+              : null,
+          color: isDark ? null : Theme.of(context).scaffoldBackgroundColor,
         ),
+        child: _buildContent(),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _handleCreateFolder,
-        icon: const Icon(Icons.add),
-        label: const Text('New Folder'),
-        elevation: 4,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 120),
+        child: FloatingActionButton.extended(
+          onPressed: _handleCreateFolder,
+          icon: const Icon(Icons.add),
+          label: const Text('New Folder'),
+          elevation: 4,
+          backgroundColor: const Color(0xFFFF8946),
+          foregroundColor: Colors.white,
+        ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildContent() {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: BlocBuilder<FolderBloc, FolderState>(
+              builder: (context, state) {
+                return AnimatedOpacity(
+                  opacity: 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Spaced Repetition Block
+                      _buildSpacedRepetitionBlock(),
+                      const SizedBox(height: 12),
+
+                      // Stats
+                      _buildStats(),
+                      const SizedBox(height: 16),
+
+                      // Folders Section
+                      _buildFoldersSection(state),
+                      const SizedBox(height: 24),
+
+                      // Tips
+                      _buildTips(),
+
+                      // Add bottom padding for FAB
+                      const SizedBox(height: 120),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpacedRepetitionBlock() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1800AD);
     return FadeTransition(
       opacity: _animationController,
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF48FB1), // Pink 200
-                Color(0xFFCE93D8), // Purple 200
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      child: GlassCard(
+        useGradientBorder: true,
+        borderRadius: 16,
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            LayeredGamepadIcon(size: 48, isDark: isDark),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Transform.rotate(
-                    angle: -0.1,
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.yellow[300],
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.gamepad,
-                        size: 28,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'PLAY & LEARN',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
-                      color: Colors.black87,
+                      color: textColor,
+                      fontFamily: 'League Spartan',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Practice vocabulary through fun games\nand earn XP!',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: isDark
+                          ? Colors.white.withOpacity(0.7)
+                          : const Color(0xFF0A082D).withOpacity(0.7),
+                      fontFamily: 'League Spartan',
+                      height: 1.3,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Practice vocabulary through fun games and earn XP!',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildStats() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1800AD);
+    final secondaryTextColor = isDark
+        ? Colors.white70
+        : const Color(0xFF1800AD).withOpacity(0.7);
     return Row(
       children: [
         Expanded(
           child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(-0.3, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: _animationController,
-              curve: Curves.easeOut,
-            )),
-            child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.yellow[300],
-                  borderRadius: BorderRadius.circular(12),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(-0.3, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: _animationController,
+                    curve: Curves.easeOut,
+                  ),
                 ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.bolt, size: 20, color: Colors.orange),
-                        SizedBox(width: 4),
-                        Text(
-                          'TOTAL XP',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                          ),
+            child: GlassCard(
+              solidBorderColor: const Color(0xFFFF8946),
+              borderRadius: 16,
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      LayeredBoltIcon(size: 18, isDark: isDark),
+                      const SizedBox(width: 6),
+                      Text(
+                        'TOTAL XP',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: secondaryTextColor,
+                          fontFamily: 'League Spartan',
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '0',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black87,
-                        height: 1.0,
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    '0',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFFFF8946),
+                      fontFamily: 'League Spartan',
+                      height: 1.0,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0.3, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: _animationController,
-              curve: Curves.easeOut,
-            )),
-            child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.cyan[300],
-                  borderRadius: BorderRadius.circular(12),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(0.3, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: _animationController,
+                    curve: Curves.easeOut,
+                  ),
                 ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.stars, size: 20, color: Colors.blue),
-                        SizedBox(width: 4),
-                        Text(
-                          'LEVEL',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                          ),
+            child: GlassCard(
+              solidBorderColor: const Color(0xFF9BCFFF),
+              borderRadius: 16,
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      LayeredStarIcon(size: 18, isDark: isDark),
+                      const SizedBox(width: 6),
+                      Text(
+                        'LEVEL',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: secondaryTextColor,
+                          fontFamily: 'League Spartan',
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '1',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black87,
-                        height: 1.0,
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '1',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: textColor,
+                      fontFamily: 'League Spartan',
+                      height: 1.0,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -332,15 +361,17 @@ class _PracticeMaterialScreenState extends State<PracticeMaterialScreen>
   }
 
   Widget _buildFoldersSection(FolderState state) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1800AD);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'CHOOSE A FOLDER',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w900,
-            color: Colors.black87,
+            color: textColor,
           ),
         ),
         const SizedBox(height: 12),
@@ -370,147 +401,131 @@ class _PracticeMaterialScreenState extends State<PracticeMaterialScreen>
       itemCount: folders.length,
       itemBuilder: (context, index) {
         final folder = folders[index];
-        final colors = [
-          Colors.blue[400]!,
-          Colors.purple[400]!,
-          Colors.green[400]!,
-          Colors.orange[400]!,
-        ];
-        final color = colors[index % colors.length];
 
-        return _buildFolderCard(folder, color, index);
-      },
-    );
-  }
+        return FutureBuilder(
+          future: Future.delayed(Duration(milliseconds: index * 50)),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const SizedBox(height: 0);
+            }
 
-  Widget _buildFolderCard(FolderModel folder, Color color, int index) {
-    final delay = index * 50;
-
-    return FutureBuilder(
-      future: Future.delayed(Duration(milliseconds: delay)),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const SizedBox(height: 0);
-        }
-
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0.3, 0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOut,
-          )),
-          child: FadeTransition(
-            opacity: _animationController,
-            child: Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: InkWell(
-                onTap: () => _handleFolderTap(folder),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(16),
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final textColor = isDark ? Colors.white : const Color(0xFF1800AD);
+            final secondaryTextColor = isDark
+                ? Colors.white60
+                : const Color(0xFF1800AD).withOpacity(0.6);
+            return SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(0.3, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: _animationController,
+                      curve: Curves.easeOut,
+                    ),
                   ),
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Transform.rotate(
-                        angle: 0.05,
-                        child: Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+              child: FadeTransition(
+                opacity: _animationController,
+                child: GlassCard(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  solidBorderColor: index % 2 == 0
+                      ? const Color(0xFFFF8946)
+                      : const Color(0xFF9BCFFF),
+                  borderRadius: 16,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  child: InkWell(
+                    onTap: () => _handleFolderTap(folder),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Row(
+                      children: [
+                        LayeredFolderIcon(size: 42, isDark: isDark),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                folder.name.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: textColor,
+                                  fontFamily: 'League Spartan',
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${folder.wordCount} words',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: secondaryTextColor,
+                                  fontFamily: 'League Spartan',
+                                ),
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.folder,
-                            size: 32,
-                            color: Colors.black87,
-                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
                           children: [
-                            Text(
-                              folder.name.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${folder.wordCount} words',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              children: [
-                                _buildInfoChip('+50 XP', Icons.bolt),
-                                _buildInfoChip('~5 min', Icons.access_time),
-                              ],
-                            ),
+                            _buildInfoChip('+50 XP', Icons.bolt),
+                            const SizedBox(width: 6),
+                            _buildInfoChip('~5 min', Icons.access_time),
                           ],
                         ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right,
-                        size: 32,
-                        color: Colors.black54,
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 24,
+                          color: isDark
+                              ? Colors.white54
+                              : const Color(0xFF1800AD).withOpacity(0.54),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
   }
 
   Widget _buildInfoChip(String text, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1800AD);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black12),
+        color: isDark
+            ? const Color(0xFF202140).withOpacity(0.4)
+            : Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: Colors.black54),
-          const SizedBox(width: 4),
+          Icon(
+            icon,
+            size: 10,
+            color: icon == Icons.bolt
+                ? const Color(0xFFFF8946)
+                : const Color(0xFF53CFFE),
+          ),
+          const SizedBox(width: 3),
           Text(
             text,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+              fontFamily: 'League Spartan',
             ),
           ),
         ],
@@ -519,161 +534,139 @@ class _PracticeMaterialScreenState extends State<PracticeMaterialScreen>
   }
 
   Widget _buildEmptyState() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(40),
-        decoration: BoxDecoration(
-          color: Colors.blue[50],
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.folder_open,
-              size: 64,
-              color: Colors.grey[400],
+    return GlassCard(
+      solidBorderColor: Colors.white10,
+      borderRadius: 20,
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Icon(Icons.folder_open, size: 56, color: Colors.white30),
+          const SizedBox(height: 12),
+          const Text(
+            'No Folders Yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              fontFamily: 'League Spartan',
             ),
-            const SizedBox(height: 16),
-            Text(
-              'No Folders Yet',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Colors.grey[700],
-              ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Create your first folder to start practicing!',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.white70,
+              fontFamily: 'League Spartan',
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Create your first folder to start practicing!',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildErrorState(String message) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(40),
-        decoration: BoxDecoration(
-          color: Colors.red[50],
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red[300],
+    return GlassCard(
+      solidBorderColor: Colors.red.withOpacity(0.3),
+      borderRadius: 20,
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline, size: 56, color: Colors.redAccent),
+          const SizedBox(height: 12),
+          const Text(
+            'Error',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              fontFamily: 'League Spartan',
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Error',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.white70,
+              fontFamily: 'League Spartan',
             ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[700],
-              ),
-              textAlign: TextAlign.center,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              context.read<FolderBloc>().add(const LoadFolders());
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF8946),
+              foregroundColor: Colors.white,
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.read<FolderBloc>().add(const LoadFolders());
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[400],
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTips() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.yellow[200],
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '💡 PRO TIPS',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: Colors.black87,
-              ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1800AD);
+    return GlassCard(
+      useGradientBorder: true,
+      borderRadius: 16,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '💡 PRO TIPS',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              color: textColor,
+              fontFamily: 'League Spartan',
             ),
-            const SizedBox(height: 16),
-            _buildTipItem('Play daily to maintain your streak'),
-            const SizedBox(height: 12),
-            _buildTipItem('Higher accuracy = More XP earned'),
-            const SizedBox(height: 12),
-            _buildTipItem('Complete faster for bonus points'),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          _buildTipItem('Play daily to maintain your streak'),
+          const SizedBox(height: 8),
+          _buildTipItem('Higher accuracy = More XP earned'),
+          const SizedBox(height: 8),
+          _buildTipItem('Complete faster for bonus points'),
+        ],
       ),
     );
   }
 
   Widget _buildTipItem(String text) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1800AD);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 6,
-          height: 6,
-          margin: const EdgeInsets.only(top: 6),
+          width: 5,
+          height: 5,
+          margin: const EdgeInsets.only(top: 5),
           decoration: const BoxDecoration(
-            color: Colors.black87,
+            color: Color(0xFFFF8946),
             shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: textColor,
+              fontFamily: 'League Spartan',
             ),
           ),
         ),
