@@ -12,13 +12,6 @@ To eliminate the friction of using multiple separate apps by integrating a power
 
 ## 2. Market Opportunity
 
-### 2.1 Market Size & Growth
-- Vietnamese EdTech market valued at ~$5 billion USD
-- 2024 revenue: ~$360 million USD
-- Projected CAGR: 11-13% (2025-2026)
-- Mobile learning apps segment: $15 million USD
-- Expected users by 2029: 11.8 million
-
 ### 2.2 Market Gap
 Vietnamese English learners currently use multiple fragmented apps:
 - **TFlat**: Offline dictionary lookups
