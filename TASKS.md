@@ -15,7 +15,7 @@ This document breaks down the Marsa MVP development into actionable tasks organi
 ### 1.1 Development Environment Setup 🔴 P0
 
 **Flutter Mobile App**
-- [ ] Install Flutter SDK and set up development environment
+- [v] Install Flutter SDK and set up development environment
 - [ ] Create new Flutter project with proper naming convention
 - [ ] Set up project structure using BLoC architecture pattern
   - [ ] Create `/data`, `/presentation`, `/logic` folders
